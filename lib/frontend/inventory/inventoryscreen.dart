@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:freshice/backend/api.dart';
-import 'package:freshice/maindatabase/database.dart';
-import 'package:freshice/maindatabase/databasemodels/inventorydatabasemodel.dart';
 
 class InventoryList extends StatefulWidget {
-  const InventoryList({super.key});
+  final String warehouseid;
+  final String token;
+  const InventoryList({super.key,
+  required this.warehouseid,
+  required this.token
+  });
 
   @override
   State<InventoryList> createState() => _InventoryListState();
@@ -16,6 +19,7 @@ class _InventoryListState extends State<InventoryList> {
 
   bool viewgrid = false;
   bool loading = false;
+
   List<dynamic> inventorylist = [];
 
   @override
@@ -23,17 +27,28 @@ class _InventoryListState extends State<InventoryList> {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      await loadData(true);
+    });
+  }
+
+  Future<void> loadData(bool type)async{
+    if(type){
       setState(() {
         loading = true;
       });
-      final List<InventoryDatabaseModel> response =
-          await FreshIceDatabase.instance.searchInventoryList("");
-      print(response);
+    }
+    final dynamic response = await API.getInventoryListAPI(searchcontroller.text, widget.warehouseid, widget.token, context);
+    if(response["status"]=="success"){
       setState(() {
-        inventorylist = response;
+        inventorylist = response["data"];
         loading = false;
       });
-    });
+    }else{
+      setState(() {
+        inventorylist = [];
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -59,7 +74,6 @@ class _InventoryListState extends State<InventoryList> {
               fontSize: 16,
               fontWeight: FontWeight.w300),
         ),
-        actions: [],
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -101,16 +115,7 @@ class _InventoryListState extends State<InventoryList> {
                                   ),
                                 ),
                                 onChanged: (value) async {
-                                  setState(() {
-                                    loading = true;
-                                  });
-                                  final List<InventoryDatabaseModel> response =
-                                      await FreshIceDatabase.instance
-                                          .searchInventoryList(value);
-                                  setState(() {
-                                    inventorylist = response;
-                                    loading = false;
-                                  });
+                                  await loadData(false);
                                 },
                               ),
                             ),
@@ -173,7 +178,6 @@ class _InventoryListState extends State<InventoryList> {
                                                         MediaQuery.of(context)
                                                             .size
                                                             .width,
-                                                    // color: Colors.red,
                                                     child: Row(
                                                       children: [
                                                         Expanded(
@@ -192,7 +196,7 @@ class _InventoryListState extends State<InventoryList> {
                                                                 child: Text(
                                                                   inventorylist[
                                                                           index]
-                                                                      .partnumber
+                                                                      ["part_number"]
                                                                       .toString(),
                                                                   style: const TextStyle(
                                                                       color: Colors
@@ -214,7 +218,7 @@ class _InventoryListState extends State<InventoryList> {
                                                                 child: Text(
                                                                   inventorylist[
                                                                           index]
-                                                                      .description
+                                                                    ["description"]
                                                                       .toString(),
                                                                   maxLines: 2,
                                                                   overflow:
@@ -238,7 +242,7 @@ class _InventoryListState extends State<InventoryList> {
                                                                     vertical:
                                                                         0),
                                                                 child: Text(
-                                                                  "Price : ${double.parse(inventorylist[index].sellingprice.toString()).toStringAsFixed(2)}",
+                                                                  "Price : ${num.parse(inventorylist[index]["sec_selling_price"].toString()).toStringAsFixed(2)}",
                                                                   style: TextStyle(
                                                                       color: API
                                                                           .appcolor,
@@ -252,7 +256,7 @@ class _InventoryListState extends State<InventoryList> {
                                                             ],
                                                           ),
                                                         ),
-                                                        Container(
+                                                        SizedBox(
                                                           width: 60,
                                                           height: 50,
                                                           // color: Colors.red,
@@ -279,11 +283,12 @@ class _InventoryListState extends State<InventoryList> {
                                                                 ),
                                                               ),
                                                               Text(
-                                                                num.parse(inventorylist[
-                                                                            index]
-                                                                        .availableqty)
-                                                                    .toStringAsFixed(
-                                                                        2),
+                                                                "${num.parse(inventorylist[index]
+                                                                            ["sec_available_qty"].toString())
+                                                                        .toStringAsFixed(
+                                                                            1)} ${inventorylist[
+                                                                            index]["sec_unit_name"]}"
+                                                                   ,
                                                                 style: TextStyle(
                                                                     color: API
                                                                         .textcolor,
@@ -314,7 +319,7 @@ class _InventoryListState extends State<InventoryList> {
                                               height: MediaQuery.of(context)
                                                       .size
                                                       .height /
-                                                  10,
+                                                  8,
                                               width: MediaQuery.of(context)
                                                   .size
                                                   .width,
@@ -342,31 +347,28 @@ class _InventoryListState extends State<InventoryList> {
                                                       thickness: 1,
                                                     ),
                                                     Expanded(
-                                                        child: Container(
-                                                      child: Column(
-                                                        children: [
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                        .only(
-                                                                    top: 8,
-                                                                    bottom: 2),
-                                                            child: Row(
-                                                              children: [
-                                                                Expanded(
-                                                                  child:
-                                                                      Container(
+                                                        child: Column(
+                                                          children: [
+                                                            Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                          .only(
+                                                                      top: 8,
+                                                                      bottom: 2),
+                                                              child: Row(
+                                                                children: [
+                                                                  Expanded(
                                                                     child:
                                                                         Padding(
-                                                                      padding: const EdgeInsets
+                                                                        padding: const EdgeInsets
                                                                               .symmetric(
                                                                           horizontal:
                                                                               8,
                                                                           vertical:
                                                                               0),
-                                                                      child:
+                                                                        child:
                                                                           Text(
-                                                                        "${inventorylist[index].partnumber}",
+                                                                        inventorylist[index]["part_number"].toString(),
                                                                         maxLines:
                                                                             1,
                                                                         overflow:
@@ -378,45 +380,43 @@ class _InventoryListState extends State<InventoryList> {
                                                                                 13,
                                                                             fontWeight:
                                                                                 FontWeight.w500),
+                                                                        ),
                                                                       ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                      child:
+                                                                          VerticalDivider()),
+                                                                  SizedBox(
+                                                                    width: MediaQuery.of(
+                                                                                context)
+                                                                            .size
+                                                                            .width /
+                                                                        4,
+                                                                    child: Text(
+                                                                      "Price : ${double.parse(inventorylist[index]["sec_selling_price"].toString()).toStringAsFixed(2)}",
+                                                                      style: TextStyle(
+                                                                          color: API
+                                                                              .appcolor,
+                                                                          fontSize:
+                                                                              13,
+                                                                          fontWeight:
+                                                                              FontWeight.w500),
                                                                     ),
                                                                   ),
-                                                                ),
-                                                                const SizedBox(
-                                                                    child:
-                                                                        VerticalDivider()),
-                                                                SizedBox(
-                                                                  width: MediaQuery.of(
-                                                                              context)
-                                                                          .size
-                                                                          .width /
-                                                                      4,
-                                                                  child: Text(
-                                                                    "Price : ${double.parse(inventorylist[index].sellingprice.toString()).toStringAsFixed(2)}",
-                                                                    style: TextStyle(
-                                                                        color: API
-                                                                            .appcolor,
-                                                                        fontSize:
-                                                                            13,
-                                                                        fontWeight:
-                                                                            FontWeight.w500),
-                                                                  ),
-                                                                ),
-                                                              ],
+                                                                ],
+                                                              ),
                                                             ),
-                                                          ),
-                                                          const Divider(
-                                                            height: 3,
-                                                          ),
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                        .symmetric(
-                                                                    horizontal:
-                                                                        8,
-                                                                    vertical:
-                                                                        2),
-                                                            child: Container(
+                                                            const Divider(
+                                                              height: 3,
+                                                            ),
+                                                            Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                          .symmetric(
+                                                                      horizontal:
+                                                                          8,
+                                                                      vertical:
+                                                                          2),
                                                               child: Row(
                                                                 children: [
                                                                   Expanded(
@@ -427,7 +427,7 @@ class _InventoryListState extends State<InventoryList> {
                                                                       child:
                                                                           Text(
                                                                         inventorylist[index]
-                                                                            .description
+                                                                            ["description"]
                                                                             .toString(),
                                                                         maxLines:
                                                                             2,
@@ -446,11 +446,9 @@ class _InventoryListState extends State<InventoryList> {
                                                                 ],
                                                               ),
                                                             ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    )),
-                                                    Container(
+                                                          ],
+                                                        )),
+                                                    SizedBox(
                                                       width: 60,
                                                       height: 50,
                                                       // color: Colors.red,
@@ -477,11 +475,13 @@ class _InventoryListState extends State<InventoryList> {
                                                             ),
                                                           ),
                                                           Text(
-                                                            num.parse(inventorylist[
+                                                            "${num.parse(inventorylist[
+                                                                            index]
+                                                                      ["sec_available_qty"].toString())
+                                                                    .toStringAsFixed(
+                                                                        1)} ${inventorylist[
                                                                         index]
-                                                                    .availableqty)
-                                                                .toStringAsFixed(
-                                                                    2),
+                                                                    ["sec_unit_name"].toString()}",
                                                             style: TextStyle(
                                                                 color: API
                                                                     .textcolor,

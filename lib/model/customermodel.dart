@@ -1,24 +1,21 @@
 class CustomerModel {
+  String? id;
   String? name;
-  String? phone;
-  String? email;
-  String? trn;
+  String? phoneNo;
 
-  CustomerModel({this.name, this.phone, this.email, this.trn});
+  CustomerModel({this.id, this.name, this.phoneNo});
 
   CustomerModel.fromJson(Map<String, dynamic> json) {
-    name = json['name'];
-    phone = json['phone'];
-    email = json['email'];
-    trn = json['trn'];
+    id = json['id'].toString();
+    name = json['name'].toString();
+    phoneNo = json['phone_no'].toString();
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
+    final Map<String, dynamic> data =  <String, dynamic>{};
+    data['id'] = id;
     data['name'] = name;
-    data['phone'] = phone;
-    data['email'] = email;
-    data['trn'] = trn;
+    data['phone_no'] = phoneNo;
     return data;
   }
 }

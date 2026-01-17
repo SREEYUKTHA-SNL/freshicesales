@@ -1,14 +1,19 @@
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
+
+import 'package:esc_pos_bluetooth/esc_pos_bluetooth.dart';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:freshice/backend/api.dart';
-import 'package:freshice/frontend/viewsalesitems.dart';
-import 'package:freshice/maindatabase/database.dart';
-import 'package:freshice/maindatabase/databasemodels/salesinvoiceheaddatabasemodel.dart';
+import 'package:freshice/frontend/sales/viewsalesitems.dart';
 import 'package:route_transitions/route_transitions.dart';
+import 'package:flutter_bluetooth_basic/flutter_bluetooth_basic.dart' as bt;
 
 class SalesListScreen extends StatefulWidget {
+  final Map<String, dynamic> userdetails;
   final String token;
-  const SalesListScreen({super.key, required this.token});
+  const SalesListScreen(
+      {super.key, required this.token, required this.userdetails});
 
   @override
   State<SalesListScreen> createState() => _SalesListScreenState();
@@ -17,7 +22,11 @@ class SalesListScreen extends StatefulWidget {
 class _SalesListScreenState extends State<SalesListScreen> {
   TextEditingController searchcontroller = TextEditingController();
 
-  List<SalesHeadDatabaseModel> saleslist = [];
+  PrinterBluetoothManager printerManager = PrinterBluetoothManager();
+
+  List<dynamic> saleslist = [];
+  DateTime startdate = DateTime.now();
+  DateTime enddate = DateTime.now();
 
   int rounding = 2;
   int selectedindex = -1;
@@ -29,16 +38,28 @@ class _SalesListScreenState extends State<SalesListScreen> {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      await loadData(true);
+    });
+  }
+
+  Future<void> loadData(bool type)async{
+    if(type){
       setState(() {
         loading = true;
       });
-      final dynamic response =
-          await FreshIceDatabase.instance.getAllSalesHeadRecords("", null);
+    }
+    final dynamic response = await API.getInvoicesListAPI("${startdate.year}-${startdate.month}-${startdate.day}", "${enddate.year}-${enddate.month}-${enddate.day}", searchcontroller.text, widget.token, context);
+    if(response["status"]=="success"){
       setState(() {
-        saleslist = response;
+        saleslist = response["data"];
         loading = false;
       });
-    });
+    }else{
+      setState(() {
+        saleslist = [];
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -74,14 +95,10 @@ class _SalesListScreenState extends State<SalesListScreen> {
                       lastDate: DateTime(2101));
                   if (picked != null) {
                     setState(() {
-                      loading = true;
+                      startdate = picked;
+                      enddate = picked;
                     });
-                    final dynamic response = await FreshIceDatabase.instance
-                        .getAllSalesHeadRecords("", picked);
-                    setState(() {
-                      saleslist = response;
-                      loading = false;
-                    });
+                    await loadData(true);
                   }
                 },
                 icon: Icon(
@@ -94,11 +111,11 @@ class _SalesListScreenState extends State<SalesListScreen> {
           height: MediaQuery.of(context).size.height,
           width: MediaQuery.of(context).size.width,
           color: Colors.white,
-          child: saleslist.isEmpty
-              ? API.emptyWidget(context)
-              : loading
+          child:loading
                   ? API.loadingScreen(context)
-                  : Column(
+                  : saleslist.isEmpty
+              ? API.emptyWidget(context)
+              :  Column(
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(
@@ -126,12 +143,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                               ),
                             ),
                             onChanged: (val) async {
-                              final dynamic response = await FreshIceDatabase
-                                  .instance
-                                  .getAllSalesHeadRecords(val, null);
-                              setState(() {
-                                saleslist = response;
-                              });
+                            await loadData(false);
                             },
                           ),
                         ),
@@ -156,7 +168,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   padding: const EdgeInsets
                                                       .symmetric(vertical: 5),
                                                   child: Text(
-                                                    "Inv Id : ${saleslist[index].invoiceid}",
+                                                    "Inv Id : ${saleslist[index]["invoice_no"].toString()}",
                                                     style: TextStyle(
                                                         color: API.textcolor,
                                                         fontSize: 14,
@@ -169,29 +181,157 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                 onTap: () {
                                                   slideRightWidget(
                                                       newPage: ViewSalesItems(
+                                                        token: widget.token,
                                                           invoiceid:
-                                                              saleslist[index]
-                                                                  .invoiceid),
+                                                           saleslist[index]["id"].toString(),),
                                                       context: context);
                                                 },
-                                                child: Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
+                                                child: const Padding(
+                                                  padding: EdgeInsets
+                                                          .symmetric(
                                                       horizontal: 10),
-                                                  child: Container(
+                                                  child: SizedBox(
                                                     height: 25,
-                                                    child: const Icon(
+                                                    child: Icon(
                                                       Icons.remove_red_eye,
                                                       color: Colors.teal,
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                              // Container(
-                                              //   height: 25,
-                                              //   child: Image.asset(
-                                              //       "assets/images/photo-print.png"),
-                                              // )
+                                              GestureDetector(
+                                                onTap: () async {
+                                                  final Map<String, dynamic>
+                                                      response =
+                                                      await API
+                                                          .getInvoicesDetailsByIDAPI(
+                                                              saleslist[index]["id"].toString(),
+                                                              widget.token,
+                                                              context
+                                                                );
+                                                  if (response.isEmpty) {
+                                                    API.showSnackBar(
+                                                        "failed",
+                                                        "Failed to fetch sales details",
+                                                        context);
+                                                  } else {
+                                                      final dynamic
+                                                          printerdetailsresponse =
+                                                          await API
+                                                              .getPrinterDetails();
+                                                      if (printerdetailsresponse[
+                                                              "status"] ==
+                                                          "success") {
+                                                        printerManager.selectPrinter(
+                                                            PrinterBluetooth(
+                                                                bt.BluetoothDevice
+                                                                    .fromJson({
+                                                          "name":
+                                                              printerdetailsresponse[
+                                                                      "btname"]
+                                                                  .toString(),
+                                                          "address":
+                                                              printerdetailsresponse[
+                                                                      "btaddress"]
+                                                                  .toString()
+                                                        })));
+                                                        const PaperSize paper =
+                                                            PaperSize.mm80;
+                                                        final profile =
+                                                            await CapabilityProfile
+                                                                .load(
+                                                                    name:
+                                                                        'default');
+                                                        final PosPrintResult
+                                                            printerresponse =
+                                                            await printerManager
+                                                                .printTicket(
+                                                                    (await API
+                                                                        .printWithDevice(
+                                                          paper,
+                                                          profile,
+                                                          {
+                                                            "company_name": widget
+                                                                .userdetails[
+                                                                    "companyname"]
+                                                                .toString(),
+                                                            "company_address": widget
+                                                                .userdetails[
+                                                                    "companyaddress"]
+                                                                .toString(),
+                                                            "company_phone": widget
+                                                                .userdetails[
+                                                                    "companyphone"]
+                                                                .toString(),
+                                                            "company_trn": widget
+                                                                .userdetails[
+                                                                    "companytrn"]
+                                                                .toString(),
+                                                            "invoice_no": response[
+                                                                    "invoice_no"]
+                                                                .toString(),
+                                                            "invoice_date": response["invoice_created_date_time"].toString(),
+                                                            "customer_name":
+                                                                response[
+                                                                        "customer_name"]
+                                                                    .toString(),
+                                                            "customer_trn_no":
+                                                                response["customer_trn"]
+                                                                    .toString(),
+                                                            "salesman":
+                                                                 response["sales_man"]
+                                                                    .toString(),
+                                                            "invoice_item_list":
+                                                                response[
+                                                                    "invoice_item_list"],
+                                                            "total_amount": num.parse(response[
+                                                                        "sub_total"]
+                                                                    .toString())
+                                                                .toStringAsFixed(
+                                                                    2),
+                                                            "tax_total": num.parse(response[
+                                                                        "vat_amount"]
+                                                                    .toString())
+                                                                .toStringAsFixed(
+                                                                    2),
+                                                            "grand_total": num.parse(response[
+                                                                        "grand_total"]
+                                                                    .toString())
+                                                                .toStringAsFixed(
+                                                                    2),
+                                                            "payment_type":response["payment_term_name"].toString()
+                                                          },
+                                                        )));
+                                                        print(
+                                                            "This is the printer response");
+                                                        print(printerresponse
+                                                            .msg);
+                                                      } else {
+                                                        setState(() {
+                                                          loading = false;
+                                                        });
+                                                        API.showSnackBar(
+                                                            "failed",
+                                                            printerdetailsresponse[
+                                                                    "msg"]
+                                                                .toString(),
+                                                            context);
+                                                      }
+                                                  }
+                                                },
+                                                child: const Padding(
+                                                  padding: EdgeInsets
+                                                          .symmetric(
+                                                      horizontal: 10),
+                                                  child: SizedBox(
+                                                    height: 25,
+                                                    child: Icon(
+                                                      Icons.print,
+                                                      color: Colors.teal,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                           const Divider(
@@ -201,11 +341,8 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 5),
                                             child: Text(
-                                              saleslist[index]
-                                                      .customername
-                                                      .toString() +
-                                                  saleslist[index]
-                                                      .customerid
+                                            saleslist[index]
+                                                      ["customer_name"]
                                                       .toString(),
                                               style: TextStyle(
                                                   color: API.appcolor,
@@ -218,7 +355,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                           ),
                                           Row(
                                             children: [
-                                              Container(
+                                              SizedBox(
                                                 width: MediaQuery.of(context)
                                                         .size
                                                         .width /
@@ -229,7 +366,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   children: [
                                                     Padding(
                                                       padding: const EdgeInsets
-                                                          .symmetric(
+                                                              .symmetric(
                                                           vertical: 5),
                                                       child: Text(
                                                         "Amount",
@@ -244,7 +381,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                     ),
                                                     Text(
                                                       num.parse(saleslist[index]
-                                                              .subtotalamount
+                                                              ["sub_total"]
                                                               .toString())
                                                           .toStringAsFixed(
                                                               rounding),
@@ -257,7 +394,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   ],
                                                 ),
                                               ),
-                                              Container(
+                                              SizedBox(
                                                 width: MediaQuery.of(context)
                                                         .size
                                                         .width /
@@ -268,7 +405,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   children: [
                                                     Padding(
                                                       padding: const EdgeInsets
-                                                          .symmetric(
+                                                              .symmetric(
                                                           vertical: 5),
                                                       child: Text(
                                                         "VAT",
@@ -283,7 +420,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                     ),
                                                     Text(
                                                       num.parse(saleslist[index]
-                                                              .totalvat
+                                                              ["vat_amount"]
                                                               .toString())
                                                           .toStringAsFixed(
                                                               rounding),
@@ -296,7 +433,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   ],
                                                 ),
                                               ),
-                                              Container(
+                                              SizedBox(
                                                 width: MediaQuery.of(context)
                                                         .size
                                                         .width /
@@ -307,7 +444,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   children: [
                                                     Padding(
                                                       padding: const EdgeInsets
-                                                          .symmetric(
+                                                              .symmetric(
                                                           vertical: 5),
                                                       child: Text(
                                                         "Total",
@@ -322,7 +459,7 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                     ),
                                                     Text(
                                                       num.parse(saleslist[index]
-                                                              .totalamount
+                                                              ["grand_total"]
                                                               .toString())
                                                           .toStringAsFixed(
                                                               rounding),
@@ -335,112 +472,6 @@ class _SalesListScreenState extends State<SalesListScreen> {
                                                   ],
                                                 ),
                                               ),
-                                              selectedindex == index
-                                                  ? const CircularProgressIndicator(
-                                                      color: Colors.green,
-                                                      strokeWidth: 1,
-                                                    )
-                                                  : saleslist[index]
-                                                              .issynced
-                                                              .toString() ==
-                                                          "N"
-                                                      ? GestureDetector(
-                                                          onTap: () async {
-                                                            setState(() {
-                                                              selectedindex =
-                                                                  index;
-                                                            });
-                                                            await FreshIceDatabase
-                                                                .instance
-                                                                .syncSingleInvoiceById(
-                                                                    saleslist[
-                                                                            index]
-                                                                        .invoiceid,
-                                                                    widget
-                                                                        .token,
-                                                                    context)
-                                                                .then(
-                                                                    (value) async {
-                                                              setState(() {
-                                                                selectedindex =
-                                                                    -1;
-                                                              });
-                                                              if (value["status"]
-                                                                      .toString() ==
-                                                                  "success") {
-                                                                setState(() {
-                                                                  loading =
-                                                                      true;
-                                                                });
-                                                                final dynamic
-                                                                    response =
-                                                                    await FreshIceDatabase
-                                                                        .instance
-                                                                        .getAllSalesHeadRecords(
-                                                                            "",
-                                                                            null);
-                                                                setState(() {
-                                                                  saleslist =
-                                                                      response;
-                                                                  loading =
-                                                                      false;
-                                                                });
-                                                              } else {
-                                                                API.showSnackBar(
-                                                                    "failed",
-                                                                    value["message"]
-                                                                        .toString(),
-                                                                    context);
-                                                              }
-                                                            });
-                                                          },
-                                                          child: Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            children: [
-                                                              Container(
-                                                                height: 25,
-                                                                width: 30,
-                                                                child: Image.asset(
-                                                                    "assets/images/cloud.png"),
-                                                              ),
-                                                              const Text(
-                                                                "Not Synced",
-                                                                style: TextStyle(
-                                                                    color: Colors
-                                                                        .red,
-                                                                    fontSize: 9,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w300),
-                                                              )
-                                                            ],
-                                                          ),
-                                                        )
-                                                      : Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Container(
-                                                              height: 25,
-                                                              width: 30,
-                                                              child: Image.asset(
-                                                                  "assets/images/stamp.png"),
-                                                            ),
-                                                            const Text(
-                                                              "Synced",
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .teal,
-                                                                  fontSize: 9,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w300),
-                                                            )
-                                                          ],
-                                                        )
                                             ],
                                           ),
                                           const SizedBox(

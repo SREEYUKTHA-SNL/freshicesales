@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.bluesky" "\0"
+            VALUE "CompanyName", "com.blueskyuae" "\0"
             VALUE "FileDescription", "freshice" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "freshice" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2024 com.bluesky. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2024 com.blueskyuae. All rights reserved." "\0"
             VALUE "OriginalFilename", "freshice.exe" "\0"
             VALUE "ProductName", "freshice" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

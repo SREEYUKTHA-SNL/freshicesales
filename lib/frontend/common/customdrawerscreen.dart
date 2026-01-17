@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_zoom_drawer/flutter_zoom_drawer.dart';
 import 'package:freshice/backend/api.dart';
-import 'package:freshice/frontend/homescreen.dart';
-import 'package:freshice/frontend/sidebarscreen.dart';
+import 'package:freshice/frontend/common/homescreen.dart';
+import 'package:freshice/frontend/common/sidebarscreen.dart';
 
 class CustomDrawerScreen extends StatefulWidget {
   const CustomDrawerScreen({super.key});

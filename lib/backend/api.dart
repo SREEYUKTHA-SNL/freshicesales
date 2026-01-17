@@ -1,19 +1,28 @@
+
+
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:convert';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:freshice/frontend/loginscreen.dart';
+import 'package:freshice/frontend/common/loginscreen.dart';
 import 'package:freshice/model/customermodel.dart';
+import 'package:freshice/model/inventorymodel.dart';
+import 'package:freshice/model/paymenttermmodel.dart';
+import 'package:freshice/model/warehousemodel.dart';
+import 'package:freshice/model/warehouseproductmodel.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
+import 'package:intl/intl.dart';
 import 'package:platform_device_id/platform_device_id.dart';
 import 'package:route_transitions/route_transitions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 class API {
   static Color backgroundsubcolor = Colors.white;
@@ -26,9 +35,16 @@ class API {
   static double appfontsize = 13;
 
   static String baseurl = "https://blueskyerp.com/freshice/index.php?r=";
+  static String fileurl = "https://blueskyerp.com/freshice/";
+
+  // static String baseurl = "https://blueskycosmos.com/freshice/index.php?r=";
+  // static String fileurl = "https://blueskycosmos.com/freshice/";
 
   static String devicetype = "android";
-  static String buildversion = "1.0.0";
+  static String buildversion = "1.0.1";
+  static String updateddate = "29 / 11 / 2025";
+
+  static String printertype = "2";
 
   static Future<Map<String, dynamic>> postLoginAPI(
       String username,
@@ -200,6 +216,308 @@ class API {
     }
   }
 
+  static Future<Map<String, dynamic>> getInventoryListAPI(
+      String term,
+      String warehouseid,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}apistore/GetInventoryList',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({
+          "term": term,
+          "warehouse_id": warehouseid
+        })
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getCustomersListAPI(
+      String term,
+      String token,
+      BuildContext context) async {
+    final response = await get(
+        Uri.parse(
+          '${baseurl}apicustomer/GetCustomerList&term=$term',
+        ),
+        headers: <String, String>{'token': token},
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+   static Future<Map<String, dynamic>> getDashboardDetailsAPI(
+      String token,
+      BuildContext context) async {
+        print("This is token");
+        print(token);
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apidashboard/GetDashboardDetails',
+        ),
+        headers: <String, String>{'token': token},
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  
+
+   static Future<List<CustomerModel>> getCustomerQueryList(
+      String term, String token) async {
+    final response = await get(
+        headers: <String, String>{'token': token},
+        Uri.parse(
+          '${baseurl}apicustomer/GetCustomerList&term=$term',
+        ),
+     );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responselistjson = json.decode(response.body);
+      List<dynamic> outputlist = responselistjson["status"] == "success"
+          ? responselistjson["data"]
+          : [];
+      return outputlist.map((json) => CustomerModel.fromJson(json)).toList();
+    } else {
+      throw Exception();
+    }
+  }
+
+  static Future<List<InventoryModel>> getInventoryQueryList(
+      String term,
+      String warehouseid,
+      String token) async {
+    final response = await post(
+        headers: <String, String>{'token': token},
+        Uri.parse(
+          '${baseurl}apistore/GetInventoryList'
+        ),
+           body: json.encode({
+          "term": term,
+          "warehouse_id": warehouseid
+        })
+     );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responselistjson = json.decode(response.body);
+      List<dynamic> outputlist = responselistjson["status"] == "success"
+          ? responselistjson["data"]
+          : [];
+      print("This is the inventory");
+      print(json.encode(outputlist));
+      print(outputlist);
+      return outputlist.map((json) => InventoryModel.fromJson(json)).toList();
+    } else {
+      throw Exception();
+    }
+  }
+
+  static Future<List<PaymentTermModel>> getPaymentTermQueryList(
+      String term,
+      String token) async {
+    final response = await post(
+        headers: <String, String>{'token': token},
+        Uri.parse(
+          '${baseurl}Apimaster/GetPaymentTermList'
+        ),
+           body: json.encode({
+          "term": term
+        })
+     );
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responselistjson = json.decode(response.body);
+      List<dynamic> outputlist = responselistjson["status"] == "success"
+          ? responselistjson["data"]
+          : [];
+      print("This is the inventory");
+      print(json.encode(outputlist));
+      print(outputlist);
+      return outputlist.map((json) => PaymentTermModel.fromJson(json)).toList();
+    } else {
+      throw Exception();
+    }
+  }
+
+
+   static Future<Map<String, dynamic>> getInvoicesListAPI(
+      String startdate,
+      String enddate,
+      String term,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apidirectinvoice/GetInvoiceList',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode(
+          {
+          "start_date":startdate,
+	        "end_date":enddate,
+	        "term":term
+          }
+        )
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+   static Future<Map<String, dynamic>> getInvoicesDetailsByIDAPI(
+      String invoiceid,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apidirectinvoice/GetInvoiceDetailsFromId',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode(
+          {
+          "invoice_id":invoiceid
+          }
+        )
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> postSalesSaveAPI(
+      String customerid,
+      String paymenttermsid,
+      String invoicedate,
+      List<dynamic> items,
+      String token,
+      BuildContext context) async {
+        print(json.encode(
+         {
+            "customer_id":customerid,
+            "payment_terms_id": paymenttermsid,
+            "invoice_date": invoicedate,
+            "items": items
+          }
+        ));
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apidirectinvoice/SaveDirectInvoice',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode(
+         {
+            "customer_id":customerid,
+            "payment_terms_id": paymenttermsid,
+            "invoice_date": invoicedate,
+            "items": items
+          }
+        )
+      );
+    print(response.body);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+
+  static Future<List<WarehouseModel>> postWarehouseListAPI(String token,
+      String warehouseid, String type, BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apiiwarehouse/GetTransferWarehouses',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({"from_warehouse_id": warehouseid, "type": type}));
+    print(response.body);
+    dynamic requestresponse = jsonDecode(response.body);
+    if (requestresponse["status"] == "success") {
+      final List responselist = requestresponse["data"];
+      return responselist.map((json) => WarehouseModel.fromJson(json)).toList();
+    } else {
+      throw Exception();
+    }
+  }
+
   static Future<Map<String, dynamic>> getProductsListAPI(String token,
       String term, String categoryid, BuildContext context) async {
     final response = await get(
@@ -223,6 +541,222 @@ class API {
       return {'status': 'failed', 'message': response.reasonPhrase.toString()};
     } else {
       return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAvailableQuantityAPI(
+      String unitid,
+      String fromwarehouseid,
+      String productid,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apiiwarehouse/GetAvailableQty',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({
+          "unit_id": unitid,
+          "from_warehouse_id": fromwarehouseid,
+          "product_id": productid
+        }));
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> postTransferAPI(
+      String id,
+      String fromwarehouseid,
+      String towarehouseid,
+      String reference,
+      String transferdate,
+      String description,
+      List<dynamic> items,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apiiwarehouse/SaveTransfer',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({
+          "id": id,
+          "from_warehouse_id": fromwarehouseid,
+          "to_warehouse_id": towarehouseid,
+          "reference": reference,
+          "transfer_date": transferdate,
+          "direct_transfer_description": description,
+          "transfer_items": items
+        }));
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTransferListAPI(
+      String term, String token, BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apiiwarehouse/GetTransferList',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({
+          "term": term,
+        }));
+    print(response.statusCode);
+    if (response.statusCode == 200) {
+      dynamic requestresponse = jsonDecode(response.body);
+      print("========================================");
+      print("========================================");
+      print(requestresponse);
+      print("========================================");
+      print("========================================");
+      return requestresponse;
+    } else if (response.statusCode == 401) {
+      API.showSnackBar('failed', "User unauthorized", context);
+      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    } else {
+      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTransferPDF(String transferid) async {
+    String requesturl = '${baseurl}Apiiwarehouse/PrintDirectTransferPDF';
+    try {
+      final response = await post(Uri.parse(requesturl),
+          headers: {"Accept": "application/json"},
+          body: json.encode({"id": transferid}));
+      if (response.statusCode == 200) {
+        final jsondata = json.decode(response.body);
+        return jsondata;
+      } else {
+        return {
+          "status": "failed",
+          "message": response.reasonPhrase.toString()
+        };
+      }
+    } catch (e) {
+      return {"status": "failed", "message": e.toString()};
+    }
+  }
+
+   static Future<Map<String, dynamic>> getDailyReportPDF(String filterdate, String token) async {
+    String requesturl = '${baseurl}Apidirectinvoice/DaysaleSummaryReport';
+    try {
+      final response = await post(Uri.parse(requesturl),
+          headers: <String, String>{'token': token},
+          body: json.encode({"from_date": filterdate}));
+      if (response.statusCode == 200) {
+        final jsondata = json.decode(response.body);
+        return jsondata;
+      } else {
+        return {
+          "status": "failed",
+          "message": response.reasonPhrase.toString()
+        };
+      }
+    } catch (e) {
+      return {"status": "failed", "message": e.toString()};
+    }
+  }
+
+   static Future<Map<String, dynamic>> getFOCReportPDF(String fromdate, String todate, String productid, String token) async {
+    String requesturl = '${baseurl}ApiReport/GetItemWiseSalesFOCReport';
+    try {
+      final response = await post(Uri.parse(requesturl),
+          headers: <String, String>{'token': token},
+          body: json.encode({
+            "from_date": fromdate,
+	"to_date": todate,
+	"product_id": productid
+          }));
+      if (response.statusCode == 200) {
+        final jsondata = json.decode(response.body);
+        return jsondata;
+      } else {
+        return {
+          "status": "failed",
+          "message": response.reasonPhrase.toString()
+        };
+      }
+    } catch (e) {
+      return {"status": "failed", "message": e.toString()};
+    }
+  }
+  
+  static Future<Map<String, dynamic>> getPrintItemWiseGoodReceiptReportPDF(
+      String startdate, String enddate, String type, String token) async {
+    String requesturl = '${baseurl}ApiReport/PrintItemWiseGoodReceiptReportPDF';
+    try {
+      final response = await post(Uri.parse(requesturl),
+          headers: <String, String>{'token': token},
+          body: json.encode({
+            "receipt_from_date": startdate,
+            "receipt_to_date": enddate,
+            "receipt_type": type
+          }));
+      if (response.statusCode == 200) {
+        final jsondata = json.decode(response.body);
+        return jsondata;
+      } else {
+        return {
+          "status": "failed",
+          "message": response.reasonPhrase.toString()
+        };
+      }
+    } catch (e) {
+      return {"status": "failed", "message": e.toString()};
+    }
+  }
+
+  static Future<List<WarehouseProductModel>> getProductsListByWarehouseAPI(
+      String term,
+      String warehouseid,
+      String token,
+      BuildContext context) async {
+    final response = await post(
+        Uri.parse(
+          '${baseurl}Apiiwarehouse/GetAllProducts',
+        ),
+        headers: <String, String>{'token': token},
+        body: json.encode({"term": term, "from_warehouse_id": warehouseid}));
+    print(response.body);
+    dynamic requestresponse = jsonDecode(response.body);
+    if (requestresponse["status"] == "success") {
+      final List responselist = requestresponse["data"];
+      return responselist
+          .map((json) => WarehouseProductModel.fromJson(json))
+          .toList();
+    } else {
+      throw Exception();
     }
   }
 
@@ -258,115 +792,6 @@ class API {
     final response = await get(
       Uri.parse(
         '${baseurl}Apistore/WarehouseList',
-      ),
-      headers: <String, String>{'token': token},
-    );
-    print(response.statusCode);
-    if (response.statusCode == 200) {
-      dynamic requestresponse = jsonDecode(response.body);
-      print("========================================");
-      print("========================================");
-      print(requestresponse);
-      print("========================================");
-      print("========================================");
-      return requestresponse;
-    } else if (response.statusCode == 401) {
-      API.showSnackBar('failed', "User unauthorized", context);
-      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    } else {
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    }
-  }
-
-  static Future<Map<String, dynamic>> postSyncInvoicesAPI(
-      String invoiceid,
-      String customerid,
-      String paymenttypeid,
-      String roundoffamount,
-      String grandtotal,
-      String invoicedate,
-      List<dynamic> materials,
-      String token,
-      BuildContext context) async {
-    print(json.encode({
-      "invoice_id": invoiceid,
-      "customer_id": customerid,
-      "payment_type_id": paymenttypeid,
-      "round_off_amount": roundoffamount,
-      "grand_total": grandtotal,
-      'invoice_date': invoicedate,
-      "inv_items": materials
-    }));
-    final response = await post(
-      Uri.parse(
-        '${baseurl}apisync/SyncInvoice',
-      ),
-      body: json.encode({
-        "invoice_id": invoiceid,
-        "customer_id": customerid,
-        "payment_type_id": paymenttypeid,
-        "round_off_amount": roundoffamount,
-        "grand_total": grandtotal,
-        'invoice_date': invoicedate,
-        "inv_items": materials
-      }),
-      headers: <String, String>{'token': token},
-    );
-    print("mainly");
-    print(response.body);
-    if (response.statusCode == 200) {
-      dynamic requestresponse = jsonDecode(response.body);
-      print("========================================");
-      print("========================================");
-      print(requestresponse);
-      print("========================================");
-      print("========================================");
-      return requestresponse;
-    } else if (response.statusCode == 401) {
-      API.showSnackBar('failed', "User unauthorized", context);
-      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    } else {
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    }
-  }
-
-  static Future<Map<String, dynamic>> postSyncBalanceInventoryAPI(
-      List<dynamic> items, String token, BuildContext context) async {
-    print("This is the balance");
-    print(json.encode({"balance_items": items}));
-    final response = await post(
-      Uri.parse(
-        '${baseurl}Apisync/SyncBalanceItems',
-      ),
-      body: json.encode({"balance_items": items}),
-      headers: <String, String>{'token': token},
-    );
-    if (response.statusCode == 200) {
-      dynamic requestresponse = jsonDecode(response.body);
-      print("========================================");
-      print("========================================");
-      print(requestresponse);
-      print("========================================");
-      print("========================================");
-      return requestresponse;
-    } else if (response.statusCode == 401) {
-      API.showSnackBar('failed', "User unauthorized", context);
-      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    } else {
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    }
-  }
-
-  static Future<Map<String, dynamic>> getSyncTablesAPI(
-      String token, BuildContext context) async {
-    print("This is the token for");
-    print(token);
-    final response = await get(
-      Uri.parse(
-        '${baseurl}apisync/Synctables',
       ),
       headers: <String, String>{'token': token},
     );
@@ -492,59 +917,6 @@ class API {
     }
   }
 
-  static Future<Map<String, dynamic>> postIntermediateSyncAPI(
-      String token, BuildContext context) async {
-    final response = await post(
-      Uri.parse(
-        '${baseurl}ApiTransfer/IntermediateSync',
-      ),
-      headers: <String, String>{'token': token},
-    );
-    if (response.statusCode == 200) {
-      dynamic requestresponse = jsonDecode(response.body);
-      print("========================================");
-      print("========================================");
-      print(requestresponse);
-      print("========================================");
-      print("========================================");
-      return requestresponse;
-    } else if (response.statusCode == 401) {
-      API.showSnackBar('failed', "User unauthorized", context);
-      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    } else {
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    }
-  }
-
-  static Future<Map<String, dynamic>> postSyncTransferAPI(
-      List<dynamic> transferids, String token, BuildContext context) async {
-    final response = await post(
-        Uri.parse(
-          '${baseurl}ApiTransfer/SyncTransfer',
-        ),
-        headers: <String, String>{'token': token},
-        body: json.encode({"transfer_ids": transferids}));
-    print(response.statusCode);
-    print("This is the response body");
-    print(response.body);
-    if (response.statusCode == 200) {
-      dynamic requestresponse = jsonDecode(response.body);
-      print("========================================");
-      print("========================================");
-      print(requestresponse);
-      print("========================================");
-      print("========================================");
-      return requestresponse;
-    } else if (response.statusCode == 401) {
-      API.showSnackBar('failed', "User unauthorized", context);
-      pushWidgetWhileRemove(newPage: const LoginScreen(), context: context);
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    } else {
-      return {'status': 'failed', 'message': response.reasonPhrase.toString()};
-    }
-  }
-
   static Future<Map<String, dynamic>> postSaveAutoProductionAPI(
       String bomid, String quantity, String token, BuildContext context) async {
     final response = await post(
@@ -642,6 +1014,11 @@ class API {
     );
   }
 
+  static String formatDateTime(DateTime dateTime) {
+    DateFormat formatter = DateFormat('dd / MM / yyyy h:mm a');
+    return formatter.format(dateTime);
+  }
+
   static Future<Map<String, dynamic>> addUserDetails(
       String userid,
       String username,
@@ -662,7 +1039,11 @@ class API {
       String appdevicesettings,
       String appstore,
       String defaultwarehouseid,
-      String defaultwarehousename) async {
+      String defaultwarehousename,
+      String defaultprintcheck,
+      String apptransfer,
+      String warehouseid
+      ) async {
     SharedPreferences poscache = await SharedPreferences.getInstance();
     poscache.setString('userid', userid);
     poscache.setString('username', username);
@@ -684,6 +1065,9 @@ class API {
     poscache.setString('app_store', appstore);
     poscache.setString('default_warehouse_id', defaultwarehouseid);
     poscache.setString('default_warehouse_name', defaultwarehousename);
+    poscache.setString('default_print_check', defaultprintcheck);
+    poscache.setString('app_transfer', apptransfer);
+    poscache.setString('warehouse_id', warehouseid);
     return {"status": "success"};
   }
 
@@ -711,6 +1095,9 @@ class API {
       String? defaultwarehouseid = poscache.getString('default_warehouse_id');
       String? defaultwarehousename =
           poscache.getString('default_warehouse_name');
+      String? defaultprintcheck = poscache.getString('default_print_check');
+      String? apptransfer = poscache.getString('app_transfer');
+      String? warehouseid = poscache.getString('warehouse_id');
 
       return {
         'status': 'success',
@@ -733,7 +1120,10 @@ class API {
         'app_device_settings': appdevicesettings,
         'app_store': appstore,
         'default_warehouse_id': defaultwarehouseid,
-        'default_warehouse_name': defaultwarehousename
+        'default_warehouse_name': defaultwarehousename,
+        'default_print_check': defaultprintcheck,
+        'app_transfer': apptransfer,
+        'warehouse_id':warehouseid
       };
     } else {
       return {'status': 'failed', 'message': 'User not available'};
@@ -780,5 +1170,289 @@ class API {
         )
       ],
     );
+  }
+
+  static Future<Map<String, dynamic>> addPrinterDetails(
+    String btname,
+    String btaddress,
+  ) async {
+    SharedPreferences blueskyesellcache = await SharedPreferences.getInstance();
+    blueskyesellcache.setString('btname', btname);
+    blueskyesellcache.setString('btaddress', btaddress);
+    return {
+      'status': 'success',
+    };
+  }
+
+  static Future<Map<String, dynamic>> getPrinterDetails() async {
+    SharedPreferences blueskyesellcache = await SharedPreferences.getInstance();
+    if (blueskyesellcache.containsKey('btname')) {
+      String? btname = blueskyesellcache.getString('btname');
+      String? btaddress = blueskyesellcache.getString('btaddress');
+      return {
+        'status': 'success',
+        'btname': btname,
+        'btaddress': btaddress,
+      };
+    } else {
+      return {'status': 'failed', 'msg': 'Printer not available'};
+    }
+  }
+
+  static Future<List<int>> printWithDevice(
+    PaperSize paper,
+    CapabilityProfile profile,
+    Map<String, dynamic> details,
+  ) async {
+    final Generator ticket = Generator(paper, profile);
+
+    List<int> bytes = [];
+
+    bytes += ticket.text(details["company_name"].toString(),
+        styles: const PosStyles(
+            fontType: PosFontType.fontA,
+            align: PosAlign.center,
+            bold: true,
+            height: PosTextSize.size3));
+
+    bytes += ticket.hr(ch: '=');
+    bytes += ticket.text(details["company_address"].toString(),
+        styles: const PosStyles(
+            fontType: PosFontType.fontA, align: PosAlign.center, bold: true));
+    bytes += ticket.text(details["company_phone"].toString(),
+        styles: const PosStyles(
+            fontType: PosFontType.fontA, align: PosAlign.center, bold: true));
+    bytes += ticket.text("TRN : ${details["company_trn"]}",
+        styles: const PosStyles(
+            fontType: PosFontType.fontA, align: PosAlign.center, bold: true));
+    bytes += ticket.text("");
+    bytes += ticket.text("TAX INVOICE",
+        styles: const PosStyles(
+            fontType: PosFontType.fontA,
+            align: PosAlign.center,
+            bold: true,
+            height: PosTextSize.size2));
+    bytes += ticket.text("");
+
+    bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "INVOICE NO",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["invoice_no"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+    bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "INVOICE DATE",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["invoice_date"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+    bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "CUSTOMER NAME",
+          styles: const PosStyles(align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["customer_name"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+    bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "CUSTOMER TRN NO",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["customer_trn_no"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+    bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "SALESMAN",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["salesman"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+     bytes += ticket.row([
+      PosColumn(
+          width: 4,
+          text: "PAYMENT TYPE",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left)),
+      PosColumn(
+          width: 1,
+          text: ":",
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.center)),
+      PosColumn(
+          text: details["payment_type"].toString(),
+          width: 7,
+          styles: const PosStyles(
+              fontType: PosFontType.fontA, align: PosAlign.left, bold: true)),
+    ]);
+
+
+    bytes += ticket.hr(
+      ch: '=',
+    );
+    bytes += ticket.row([
+      PosColumn(
+          text: 'Item',
+          width: 4,
+          styles: const PosStyles(fontType: PosFontType.fontA, bold: true)),
+      PosColumn(
+          text: 'Qty',
+          width: 2,
+          styles: const PosStyles(fontType: PosFontType.fontA, bold: true,    align: PosAlign.right,)),
+      PosColumn(
+          text: 'Unit',
+          width: 2,
+          styles: const PosStyles(fontType: PosFontType.fontA, bold: true,    align: PosAlign.right,)),
+      PosColumn(
+          text: 'Rate',
+          width: 2,
+          styles: const PosStyles(
+              align: PosAlign.right, fontType: PosFontType.fontA, bold: true)),
+      PosColumn(
+          text: 'Total',
+          width: 2,
+          styles: const PosStyles(
+              align: PosAlign.right, fontType: PosFontType.fontA, bold: true)),
+    ]);
+    bytes += ticket.hr(ch: '-');
+
+    for (var item in details["invoice_item_list"]) {
+      bytes += ticket.row([
+        PosColumn(
+            text: item["description"].toString(),
+            width: 4,
+            styles: const PosStyles(fontType: PosFontType.fontA, bold: true)),
+        PosColumn(
+            text: item["quantity"].toString(),
+            width: 2,
+            styles: const PosStyles(fontType: PosFontType.fontA, bold: true,    align: PosAlign.right,)),
+        PosColumn(
+            text: item["unit_name"].toString(),
+            width: 2,
+            styles: const PosStyles(fontType: PosFontType.fontA, bold: true,    align: PosAlign.right,)),
+        PosColumn(
+            text: item["rate"].toString(),
+            width: 2,
+            styles: const PosStyles(
+                align: PosAlign.right,
+                fontType: PosFontType.fontA,
+                bold: true)),
+        PosColumn(
+            text: item["total_amount"].toString(),
+            width: 2,
+            styles: const PosStyles(
+                align: PosAlign.right,
+                fontType: PosFontType.fontA,
+                bold: true)),
+      ]);
+    }
+    bytes += ticket.hr(
+      ch: '-',
+    );
+
+    bytes += ticket.row([
+      PosColumn(
+          text: 'Sub Total',
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.left, fontType: PosFontType.fontA, bold: true)),
+      PosColumn(
+          text: details["total_amount"],
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.right, fontType: PosFontType.fontA, bold: true)),
+    ]);
+    bytes += ticket.hr(
+      ch: '-',
+    );
+    bytes += ticket.row([
+      PosColumn(
+          text: 'VAT amount',
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.left, fontType: PosFontType.fontA, bold: true)),
+      PosColumn(
+          text: details["tax_total"],
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.right, fontType: PosFontType.fontA, bold: true)),
+    ]);
+    bytes += ticket.hr(
+      ch: '=',
+    );
+    bytes += ticket.row([
+      PosColumn(
+          text: 'Grand Total',
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.left, fontType: PosFontType.fontA, bold: true)),
+      PosColumn(
+          text: details["grand_total"],
+          width: 6,
+          styles: const PosStyles(
+              align: PosAlign.right, fontType: PosFontType.fontA, bold: true)),
+    ]);
+
+    bytes += ticket.hr(ch: '-');
+    bytes += ticket.text("Thank you for shopping with us",
+        styles: const PosStyles(align: PosAlign.center));
+    bytes += ticket.hr(ch: '-');
+    bytes += ticket.text("Signature/Date",
+        styles: const PosStyles(align: PosAlign.center, bold: true));
+
+    bytes += ticket.feed(2);
+    bytes += ticket.cut(mode: PosCutMode.full);
+
+    return bytes;
   }
 }

@@ -3,8 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:freshice/backend/api.dart';
-import 'package:freshice/frontend/customdrawerscreen.dart';
-import 'package:freshice/frontend/homescreen.dart';
+import 'package:freshice/frontend/common/customdrawerscreen.dart';
 import 'package:route_transitions/route_transitions.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -70,7 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     autologinresponse["app_device_settings"].toString(),
                     autologinresponse["app_store"].toString(),
                     autologinresponse["default_warehouse_id"].toString(),
-                    autologinresponse["default_warehouse_name"].toString())
+                    autologinresponse["default_warehouse_name"].toString(),
+                    autologinresponse["default_print_check"].toString(),
+                    autologinresponse["app_transfer"].toString(),
+                    autologinresponse["warehouse_id"].toString())
                 .then((value) {
               if (value["status"] == "success") {
                 pushWidgetWhileRemove(
@@ -329,7 +331,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 .toString(),
                                             response["user_data"]
                                                     ["default_warehouse_name"]
-                                                .toString())
+                                                .toString(),
+                                            response["user_data"]["default_print_check"].toString(),
+                                            response["user_data"]["app_transfer"].toString(),
+                                            response["user_data"]["warehouse_id"].toString())
                                         .then((value) {
                                       if (value["status"] == "success") {
                                         pushWidgetWhileRemove(
@@ -381,11 +386,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontWeight: FontWeight.w300),
                             ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.all(5.0),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
                             child: Text(
-                              "19 / 08 / 2024",
-                              style: TextStyle(
+                              API.baseurl.toString().replaceAll(
+                                  RegExp(r'^https:\/\/|\/index\.php\?r=$'), ''),
+                              style: const TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontWeight: FontWeight.w300,
+                                  fontSize: 8,
+                                  color: Colors.black),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
+                            child: Text(
+                              API.updateddate,
+                              style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w300),

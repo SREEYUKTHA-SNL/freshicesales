@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:freshice/backend/api.dart';
-import 'package:freshice/frontend/addcustomerscreen.dart';
 import 'dart:math' as math;
 
-import 'package:freshice/maindatabase/database.dart';
-import 'package:freshice/maindatabase/databasemodels/customerdatabasemodel.dart';
-import 'package:route_transitions/route_transitions.dart';
 
 class CustomerScreen extends StatefulWidget {
-  const CustomerScreen({super.key});
+  final String token;
+  const CustomerScreen({super.key,
+  required this.token
+  });
 
   @override
   State<CustomerScreen> createState() => _CustomerScreenState();
@@ -18,27 +17,39 @@ class CustomerScreen extends StatefulWidget {
 class _CustomerScreenState extends State<CustomerScreen> {
   TextEditingController searchcontroller = TextEditingController();
 
-  List<CustomerDatabaseModel> customers = [];
+  List<dynamic> customers = [];
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      setState(() {
-        loading = true;
-      });
-      final dynamic response =
-          await FreshIceDatabase.instance.searchCustomerList("");
-      print(response);
-      setState(() {
-        customers = response;
-        loading = false;
-      });
+      await loadData(true);
     });
   }
 
+   Future<void> loadData(bool type)async{
+    if(type){
+      setState(() {
+        loading = true;
+      });
+    }
+    final dynamic response = await API.getCustomersListAPI(searchcontroller.text, widget.token, context);
+    if(response["status"]=="success"){
+      setState(() {
+        customers = response["data"];
+        loading = false;
+      });
+    }else{
+      setState(() {
+        customers = [];
+        loading = false;
+      });
+    }
+  }
+
   bool loading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,12 +110,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                             ),
                           ),
                           onChanged: (value) async {
-                            final dynamic response = await FreshIceDatabase
-                                .instance
-                                .searchCustomerList(value);
-                            setState(() {
-                              customers = response;
-                            });
+                         await loadData(false);
                           },
                         ),
                       ),
@@ -130,7 +136,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                             padding: const EdgeInsets.all(15.0),
                                             child: Text(
                                               customers[index]
-                                                  .customername[0]
+                                                  ["name"][0]
                                                   .toString(),
                                               style:
                                                   const TextStyle(fontSize: 16),
@@ -145,7 +151,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                                 vertical: 5),
                                             child: Text(
                                               customers[index]
-                                                  .customername
+                                                ["name"]
                                                   .toString(),
                                               style: TextStyle(
                                                   color: API.textcolor,
@@ -184,7 +190,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                                     ),
                                                     Text(
                                                       customers[index]
-                                                          .customerphoneno
+                                                          ["phone_no"]
                                                           .toString(),
                                                       style: TextStyle(
                                                           color: API.textcolor,
@@ -209,7 +215,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                                               .symmetric(
                                                           vertical: 5),
                                                       child: Text(
-                                                        "Email",
+                                                        "Address",
                                                         style: TextStyle(
                                                             color:
                                                                 API.textcolor,
@@ -221,7 +227,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                                     ),
                                                     Text(
                                                       customers[index]
-                                                          .customeremailid
+                                                          ["address"]
                                                           .toString(),
                                                       style: TextStyle(
                                                           color: API.textcolor,
@@ -259,7 +265,7 @@ class _CustomerScreenState extends State<CustomerScreen> {
                                                 ),
                                                 Text(
                                                   customers[index]
-                                                      .customertrn
+                                                      ["trn_no"]
                                                       .toString(),
                                                   style: TextStyle(
                                                       color: API.textcolor,
