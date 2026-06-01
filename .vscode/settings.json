@@ -1,5 +1,5 @@
 {
     "editor.defaultFormatter": "Dart-Code.dart-code",
     "editor.formatOnSave": true,
-    "dart.flutterSdkPath": "E:\\flutter_original_3.7\\flutter"
+    "dart.flutterSdkPath": "E:\\flutter3.27.0\\flutter"
 }
