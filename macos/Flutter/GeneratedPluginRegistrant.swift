@@ -8,8 +8,8 @@ import Foundation
 import connectivity_plus_macos
 import device_info_plus
 import path_provider_foundation
-import platform_device_id
 import platform_device_id_macos
+import platform_device_id_plus
 import share_plus
 import shared_preferences_foundation
 import sqflite

@@ -1,13 +1,14 @@
 // ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages
 
-import 'package:esc_pos_bluetooth/esc_pos_bluetooth.dart';
-import 'package:esc_pos_utils/esc_pos_utils.dart';
+import 'package:esc_pos_bluetooth_updated/esc_pos_bluetooth_updated.dart';
+import 'package:esc_pos_utils_updated/esc_pos_utils_updated.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:freshice/backend/api.dart';
 import 'package:freshice/frontend/sales/viewsalesitems.dart';
 import 'package:route_transitions/route_transitions.dart';
-import 'package:flutter_bluetooth_basic/flutter_bluetooth_basic.dart' as bt;
+import 'package:flutter_bluetooth_basic_updated/flutter_bluetooth_basic.dart'
+    as bt;
 
 class SalesListScreen extends StatefulWidget {
   final Map<String, dynamic> userdetails;

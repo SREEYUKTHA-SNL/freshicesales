@@ -71,95 +71,99 @@ class _AddTransferState extends State<AddTransfer> {
               fontWeight: FontWeight.w300),
         ),
       ),
-      bottomNavigationBar: loading
-          ? const SizedBox()
-          : itemslist.isEmpty
-              ? const SizedBox()
-              : Container(
-                  height: 60,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.white,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: Text(
-                          "Items ( ${itemslist.length} )",
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w300),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          setState(() {
-                            loading = true;
-                          });
-                          final dynamic response = await API.postTransferAPI(
-                              "",
-                              fromwarehouse["id"].toString(),
-                              towarehouse["id"].toString(),
-                              referrencecontroller.text,
-                              "",
-                              "",
-                              itemslist,
-                              widget.token,
-                              context);
-                          if (response["status"] == "success") {
-                            pushWidgetWhileRemove(
-                                newPage: const SuccessPage(
-                                    screen: CustomDrawerScreen()),
-                                context: context);
-                          } else {
-                            setState(() {
-                              loading = false;
-                            });
-                            API.showSnackBar("failed",
-                                response["message"].toString(), context);
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: Stack(
-                            children: [
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width / 2.5,
-                                height: 50,
-                                child: Card(
-                                  elevation: 10,
-                                  color: API.appcolor,
-                                  semanticContainer: true,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6)),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: const [
-                                      Text(
-                                        "Submit",
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w300),
-                                      ),
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.white,
-                                        size: 20,
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+      bottomNavigationBar: SafeArea(
+        child: loading
+            ? const SizedBox()
+            : itemslist.isEmpty
+                ? const SizedBox()
+                : SafeArea(
+                  child: Container(
+                      height: 60,
+                      width: MediaQuery.of(context).size.width,
+                      color: Colors.white,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: Text(
+                              "Items ( ${itemslist.length} )",
+                              style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w300),
+                            ),
                           ),
-                        ),
-                      )
-                    ],
-                  ),
+                          GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                loading = true;
+                              });
+                              final dynamic response = await API.postTransferAPI(
+                                  "",
+                                  fromwarehouse["id"].toString(),
+                                  towarehouse["id"].toString(),
+                                  referrencecontroller.text,
+                                  "",
+                                  "",
+                                  itemslist,
+                                  widget.token,
+                                  context);
+                              if (response["status"] == "success") {
+                                pushWidgetWhileRemove(
+                                    newPage: const SuccessPage(
+                                        screen: CustomDrawerScreen()),
+                                    context: context);
+                              } else {
+                                setState(() {
+                                  loading = false;
+                                });
+                                API.showSnackBar("failed",
+                                    response["message"].toString(), context);
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: Stack(
+                                children: [
+                                  SizedBox(
+                                    width: MediaQuery.of(context).size.width / 2.5,
+                                    height: 50,
+                                    child: Card(
+                                      elevation: 10,
+                                      color: API.appcolor,
+                                      semanticContainer: true,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(6)),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
+                                        children: const [
+                                          Text(
+                                            "Submit",
+                                            style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w300),
+                                          ),
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.white,
+                                            size: 20,
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
                 ),
+      ),
       body: SafeArea(
         child: Container(
             height: MediaQuery.of(context).size.height,

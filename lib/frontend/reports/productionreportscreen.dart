@@ -107,7 +107,7 @@ class _ProductionReportScreenState extends State<ProductionReportScreen> {
                                       builder: (context, child) {
                                         return Theme(
                                           data: Theme.of(context).copyWith(
-                                            backgroundColor: API.appcolor,
+                                            dialogBackgroundColor: API.appcolor,
                                             colorScheme: ColorScheme.light(
                                                 primary: API.appcolor,
                                                 onPrimary: Colors.white,
@@ -196,7 +196,7 @@ class _ProductionReportScreenState extends State<ProductionReportScreen> {
                                       builder: (context, child) {
                                         return Theme(
                                           data: Theme.of(context).copyWith(
-                                            backgroundColor: API.appcolor,
+                                            dialogBackgroundColor: API.appcolor,
                                             colorScheme: ColorScheme.light(
                                                 primary: API.appcolor,
                                                 onPrimary: Colors.white,
